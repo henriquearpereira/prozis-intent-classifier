@@ -127,7 +127,7 @@ class IntentClassifier:
         
         return ' '.join(words)
     
-    def load_data(self, data_path: str) -> pd.Dataframe:
+    def load_data(self, data_path: str) -> pd.DataFrame:
         """
         Loading the data either from JSON or CSV File
 
@@ -193,7 +193,7 @@ class IntentClassifier:
                 raise ValueError("No valid texts after preprocessing")
             
             #preparing features and labels
-            x = df['processed_text'].values
+            X = df['processed_text'].values
             y = df['intent'].values
 
             #split the data
