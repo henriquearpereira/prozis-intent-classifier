@@ -217,7 +217,7 @@ async def classify_batch(
         logger.info(f"Batch classified {len(request.texts)} texts in {total_time:.2f}ms")
         
         return BatchIntentResponse(
-            results=results,
+            intent=results,
             total_processed=len(results),
             avg_processing_time_ms=round(avg_time, 2)
         )
@@ -249,7 +249,7 @@ async def get_model_info(
         
         return ModelInfoResponse(
             status=model_info.get("status", "unknown"),
-            supported_intents=model_info.get("supported_intents", []),
+            supported_intents=list(model_info.get("supported_intents", {}).keys()),
             model_type=model_info.get("model_type", "Unknown"),
             vectorizer_features=model_info.get("vectorizer_features", 0),
             last_trained=datetime.now().isoformat()  
@@ -277,11 +277,11 @@ async def health_check() -> HealthResponse:
     """
     try:
         uptime = time.time() - start_time
-        model_ready = classifier is not None and classifier.is_trained
+        model_ready = classifier is not None and classifier.is_trained if classifier else False
         
         supported_intents = []
         if classifier:
-            supported_intents = classifier.intent_labels
+            supported_intents = getattr(classifier, 'intent_labels', [])
         
         return HealthResponse(
             status="healthy" if model_ready else "degraded",

@@ -39,7 +39,7 @@ class IntentClassifier:
     - confirm_order: confirmar pedido
     - unknown_intent: intenção desconhecida
     """
-    def __init__(self, model_path: str = "models/"):
+    def __init__(self, model_path: str = "app/models/"):
         """
         init the classifier 
 
