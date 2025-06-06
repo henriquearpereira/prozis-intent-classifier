@@ -8,7 +8,7 @@
 
 ## 📋 Overview
 
-This API classifies Portuguese text into 6 predefined e-commerce intents using machine learning. Built with FastAPI and scikit-learn's SGDClassifier, it provides real-time text classification for customer interactions in an online supplement store context.
+This API classifies Portuguese text into 6 predefined e-commerce intents using machine learning. **The model was trained on an enhanced dataset with 3 variations per labeled case of the original dataset for improved robustness.** Built with FastAPI and scikit-learn's SGDClassifier, it provides real-time text classification for customer interactions in an online supplement store context.
 
 ### 🎯 Supported Intents
 
@@ -230,11 +230,34 @@ python -m pytest tests/test_api.py::TestIntegrationScenarios::test_portuguese_la
 
 The model chosen was SGDClassifier due to the results that came from the script app/utils/benchmark_models.py
 
-## 🔮 Context Enhancement Considerations
+```bash
+python app\utils\benchmark_models.py
+```
 
-### Current Limitations
-The current implementation classifies text in isolation without considering:
-- User session history
-- Product catalog context
-- User preferences
-- Previous interactions
+| Model                    | Mean Accuracy |
+|--------------------------|----------------|
+| LogisticRegression       | 0.8222         |
+| RandomForest             | 0.5889         |
+| ComplementNB             | 0.8222         |
+| XGBoost                  | 0.4444         |
+| SGDClassifier (tuned)    | 0.8444         |
+| LinearSVC (tuned)        | 0.8444         |
+
+
+
+## 🔮 Suggested Enhancements
+Context-Aware Inference: Incorporate user session history or interaction flow for improved accuracy in ambiguous cases.
+
+Model Deployment: Add Docker and CI/CD for production readiness.
+
+Richer Dataset: Augment training data with real-world user queries or perform active learning with production inputs.
+
+Intent Confidence Calibration: Improve reliability of confidence scores with techniques like Platt scaling.
+
+Fallback Strategies: Use ensemble models or rule-based logic for low-confidence or unknown classifications.
+
+Streaming & Async Support: Enable real-time input via websockets or Kafka integration.
+
+Monitoring: Log and analyze user queries in production for model drift detection and retraining triggers.
+
+Multilingual Support: Extend model to support more languages, given the e-commerce context might attract international users.
