@@ -38,6 +38,8 @@ cd intent-classification-api
 
 2. **Install dependencies**
 ```bash
+python -m venv venv
+.\venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -98,23 +100,22 @@ curl -X POST "http://127.0.0.1:8000/api/v1/classify/batch" \
   "intent": [
     {
       "intent": "search_product",
-      "confidence_score": 0.92,
-      "processing_time_ms": 8.1
+      "confidence_score": 0.9019,
+      "processing_time_ms": 7.24
     },
     {
-      "intent": "product_info", 
-      "confidence_score": 0.89,
-      "processing_time_ms": 7.8
+      "intent": "product_info",
+      "confidence_score": 0.8186,
+      "processing_time_ms": 1.76
     },
     {
       "intent": "add_to_cart",
-      "confidence_score": 0.95,
-      "processing_time_ms": 6.9
+      "confidence_score": 0.505,
+      "processing_time_ms": 1.46
     }
   ],
   "total_processed": 3,
-  "avg_processing_time_ms": 7.6
-}
+  "avg_processing_time_ms": 3.72
 ```
 
 ### Health Check
