@@ -33,7 +33,7 @@ This API classifies Portuguese text into 6 predefined e-commerce intents using m
 1. **Clone the repository**
 ```bash
 git clone <repository-url>
-cd intent-classification-api
+cd prozis-intent-classifier
 ```
 
 2. **Install dependencies**
