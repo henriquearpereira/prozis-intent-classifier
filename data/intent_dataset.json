@@ -1,0 +1,38 @@
+[
+  {"text": "Whey Isolate", "label": "search_product"},
+  {"text": "ver multivitaminicos", "label": "search_product"},
+  {"text": "barra de amendoim", "label": "search_product"},
+  {"text": "procurar creatina", "label": "search_product"},
+  {"text": "encontrar proteína vegetal", "label": "search_product"},
+  
+  {"text": "Qual a diferença entre whey concentrada e isolada?", "label": "product_info"},
+  {"text": "benefícios omega 3", "label": "product_info"},
+  {"text": "como tomar creatina", "label": "product_info"},
+  {"text": "para que serve BCAA?", "label": "product_info"},
+  {"text": "efeitos da glutamina", "label": "product_info"},
+  
+  {"text": "Adicionar 1kg de aveia ao carrinho", "label": "add_to_cart"},
+  {"text": "quero comprar 2 caixas de barras", "label": "add_to_cart"},
+  {"text": "põe a creatina no cesto", "label": "add_to_cart"},
+  {"text": "adiciona vitamina D ao carrinho", "label": "add_to_cart"},
+  {"text": "comprar pack de proteínas", "label": "add_to_cart"},
+  
+  {"text": "Mostrar carrinho", "label": "go_to_shopping_cart"},
+  {"text": "ir para o cesto", "label": "go_to_shopping_cart"},
+  {"text": "quero finalizar", "label": "go_to_shopping_cart"},
+  {"text": "ver os itens do carrinho", "label": "go_to_shopping_cart"},
+  {"text": "consultar carrinho de compras", "label": "go_to_shopping_cart"},
+  
+  {"text": "Confirmar encomenda", "label": "confirm_order"},
+  {"text": "pagar agora", "label": "confirm_order"},
+  {"text": "finalizar compra", "label": "confirm_order"},
+  {"text": "efetuar pagamento", "label": "confirm_order"},
+  {"text": "concluir a encomenda", "label": "confirm_order"},
+  
+  {"text": "obrigado", "label": "unknown_intention"},
+  {"text": "preciso de ajuda", "label": "unknown_intention"},
+  {"text": "falar com suporte", "label": "unknown_intention"},
+  {"text": "promoções?", "label": "unknown_intention"},
+  {"text": "tens desconto?", "label": "unknown_intention"}
+]
+
