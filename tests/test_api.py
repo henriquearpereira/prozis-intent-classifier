@@ -16,9 +16,9 @@ import shutil
 # Add the parent directory to the path to import our modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from main import app, create_sample_data
-from models.classifier import IntentClassifier
-from api.routes import init_classifier
+from app.main import app, create_sample_data
+from app.models.classifier import IntentClassifier
+from app.api.routes import init_classifier
 
 class TestIntentClassificationAPI:
     """Test suite for Intent Classification API"""
