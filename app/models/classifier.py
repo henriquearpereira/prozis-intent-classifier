@@ -18,7 +18,7 @@ import unicodedata
 import logging
 from typing import Tuple, List, Optional
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import SGDClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import classification_report, confusion_matrix
@@ -61,11 +61,15 @@ class IntentClassifier:
             max_df=0.95  #remove very common words
         )
 
-        self.model = LogisticRegression(
-            C=1.0,  #regularization strength
+        # Updated model: SGDClassifier with optimal parameters
+        self.model = SGDClassifier(
+            alpha=0.001,           # optimal regularization strength
+            learning_rate='optimal', # optimal learning rate schedule
+            loss='hinge',          # SVM-like loss function
+            penalty='l2',          # L2 regularization
             random_state=42,
             max_iter=1000,
-            class_weight="balanced"  #handle class imbalance
+            class_weight="balanced"  # handle class imbalance
         )
 
         self.is_trained = False
@@ -168,13 +172,13 @@ class IntentClassifier:
             logger.error(f"Error loading data from {data_path}: {e}")
             raise
 
-    def train(self, data_path: str, test_size: float = 0.2) -> dict:
+    def train(self, data_path: str = "data/enhanced_intent_dataset.json", test_size: float = 0.2) -> dict:
         """
         Train the classifier on the provided dataset
 
         args:
-            - data_path: path to the training dataset
-            - test_size: fraction of dtat to use for testing
+            - data_path: path to the training dataset (default: enhanced dataset)
+            - test_size: fraction of data to use for testing
         
         returns:
             dict with training metrics
@@ -203,16 +207,19 @@ class IntentClassifier:
 
             logger.info(f"Training on {len(X_train)} samples, testing on {len(X_test)} samples")
 
-            #vectorize test
+            #vectorize text
             X_train_tfidf = self.vectorizer.fit_transform(X_train)
             X_test_tfidf = self.vectorizer.transform(X_test)
 
             #train model
+            logger.info("Training SGDClassifier with optimal parameters...")
             self.model.fit(X_train_tfidf, y_train)
 
             #evaluation on testing set
             y_pred = self.model.predict(X_test_tfidf)
-            y_pred_proba = self.model.predict_proba(X_test_tfidf)
+            
+            # For SGDClassifier, we need decision_function for confidence scores
+            y_decision = self.model.decision_function(X_test_tfidf)
 
             #calculate metrics
             test_accuracy = self.model.score(X_test_tfidf, y_test)
@@ -271,7 +278,7 @@ class IntentClassifier:
         except Exception as e:
             logger.warning(f"Could not log feature importance: {e}")
 
-    def predict (self, text: str)  -> Tuple[str,float]:
+    def predict(self, text: str) -> Tuple[str, float]:
         """
         Prediction of intent for a single text
         
@@ -285,23 +292,30 @@ class IntentClassifier:
             raise ValueError("Model is not trained still. Call train() first please")
         
         if not text or not isinstance(text, str):
-            return "unknown_intention", 0.0
+            return "unknown_intent", 0.0
         
         #preprocess
         processed_text = self.preprocess_text(text)
 
         if not processed_text:
-            return "unknown_intention", 0.0
+            return "unknown_intent", 0.0
         
         #vectorization
         text_tfidf = self.vectorizer.transform([processed_text])
 
         #prediction
         prediction = self.model.predict(text_tfidf)[0]
-        probabilities = self.model.predict_proba(text_tfidf)[0]
-
-        #get confidence (max proba)
-        confidence = float(np.max(probabilities))
+        
+        # For SGDClassifier, use decision_function for confidence
+        decision_scores = self.model.decision_function(text_tfidf)[0]
+        
+        # Convert decision scores to confidence (using softmax-like transformation)
+        if len(decision_scores.shape) == 0:  # binary classification
+            confidence = 1.0 / (1.0 + np.exp(-abs(decision_scores)))
+        else:  # multi-class
+            exp_scores = np.exp(decision_scores - np.max(decision_scores))
+            probabilities = exp_scores / np.sum(exp_scores)
+            confidence = float(np.max(probabilities))
 
         #log prediction details
         logger.debug(f"Input: '{text}' -> Processed: '{processed_text}' ")
@@ -311,7 +325,7 @@ class IntentClassifier:
     
     def predict_batch(self, texts: List[str]) -> List[Tuple[str,float]]:
         """
-        Precition of intents for multiple texts
+        Prediction of intents for multiple texts
 
         args:
             texts: list of input texts
@@ -326,11 +340,11 @@ class IntentClassifier:
         results = []
         for text in texts:
             try:
-                intent, confidence  = self.predict(text)
-                results.append((intent,confidence))
+                intent, confidence = self.predict(text)
+                results.append((intent, confidence))
             except Exception as e:
                 logger.warning(f"Error predicting text '{text}': {e}")
-                results.append(("unknown_intention", 0.0))
+                results.append(("unknown_intent", 0.0))
 
         return results
     
@@ -393,18 +407,18 @@ class IntentClassifier:
         }
 
 
-
-# #Example use
+# # Example usage with enhanced dataset
 # if __name__ == '__main__':
-#     #init classifier
+#     # Initialize classifier
 #     classifier = IntentClassifier()
-#     sample_data= "data\intent_dataset.json"
+    
 #     try:
-#         print("Training the model...")
-#         metrics = classifier.train(sample_data)
+#         print("Training the SGD model with enhanced dataset...")
+#         metrics = classifier.train()  # Uses default enhanced dataset path
 #         print(f"Training completed w/ accuracy: {metrics['test_accuracy']:.4f}")
+#         print(f"Cross-validation mean: {metrics['cv_mean']:.4f}")
 
-#         #test predictions
+#         # Test predictions
 #         test_texts = [
 #             "whey protein",
 #             "como usar creatina",
@@ -421,8 +435,7 @@ class IntentClassifier:
         
 #         # Save model
 #         classifier.save_model()
-#         print("Model saved successfully")
+#         print("SGD Model saved successfully")
         
 #     except Exception as e:
 #         print(f"Error: {e}")
-

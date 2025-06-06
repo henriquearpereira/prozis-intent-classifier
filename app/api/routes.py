@@ -69,7 +69,7 @@ class BatchIntentResponse(BaseModel):
     Response model for batch text classification
     """
     intent: List[IntentResponse]= Field(..., description="List of classification results")
-    total_processed: int = Field(..., description="Total number of tects processed")
+    total_processed: int = Field(..., description="Total number of texts processed")
     avg_processing_time_ms: float = Field(..., description="Average processing time per text")
 
 class ModelInfoResponse(BaseModel):
@@ -124,7 +124,7 @@ def get_classifier() -> IntentClassifier:
     "/classify",
     response_model=IntentResponse,
     summary="Classify text intent",
-    description="Classify a single text input into one of the predefined intents",
+    description="Classify a single text input into one of the predefined intents using SGDClassifier",
     responses={
         200: {"description": "successfully classified text"},
         400: {"description": "invalid input"},
@@ -147,7 +147,7 @@ async def classify_text(request: TextRequest,
         #calculating the processing time
         processing_time = (time.time()*1000) - start_time_ms
         #log the prediction
-        logger.info(f"Classified '{request.text[:50]} ...' -> {intent} (confidence: {confidence:.4f})")
+        logger.info(f"Classified '{request.text[:50]}...' -> {intent} (confidence: {confidence:.4f})")
 
         return IntentResponse(
             intent=intent,
@@ -167,7 +167,7 @@ async def classify_text(request: TextRequest,
     "/classify/batch",
     response_model=BatchIntentResponse,
     summary="Classify multiple texts",
-    description="Classify multiple text inputs at once (max 100 texts)",
+    description="Classify multiple text inputs at once using SGDClassifier (max 100 texts)",
     responses={
         200: {"description": "Successfully classified all texts"},
         400: {"description": "Invalid input"},
@@ -205,7 +205,7 @@ async def classify_batch(
                 logger.error(f"Error classifying text {i}: {str(e)}")
                 # Add error result but continue processing others
                 results.append(IntentResponse(
-                    intent="unknown_intention",
+                    intent="unknown_intent",  # Fixed: consistent with classifier naming
                     confidence_score=0.0,
                     processing_time_ms=0.0
                 ))
@@ -234,7 +234,7 @@ async def classify_batch(
     "/model/info",
     response_model=ModelInfoResponse,
     summary="Get model information",
-    description="Get detailed information about the trained model"
+    description="Get detailed information about the trained SGDClassifier model"
 )
 
 async def get_model_info(
@@ -280,8 +280,8 @@ async def health_check() -> HealthResponse:
         model_ready = classifier is not None and classifier.is_trained if classifier else False
         
         supported_intents = []
-        if classifier:
-            supported_intents = getattr(classifier, 'intent_labels', [])
+        if classifier and hasattr(classifier, 'intent_labels'):
+            supported_intents = list(classifier.intent_labels.keys())
         
         return HealthResponse(
             status="healthy" if model_ready else "degraded",
@@ -303,7 +303,7 @@ async def health_check() -> HealthResponse:
 @router.post(
     "/model/retrain",
     summary="Retrain model",
-    description="Retrain the model with new data (requires data file)",
+    description="Retrain the SGDClassifier model with enhanced dataset",
     responses={
         200: {"description": "Model retrained successfully"},
         400: {"description": "Invalid request"},
@@ -312,14 +312,15 @@ async def health_check() -> HealthResponse:
 )
 async def retrain_model(
     background_tasks: BackgroundTasks,
-    data_path: str = "data/intent_dataset.json") -> Dict[str, Any]:
+    data_path: str = "data/enhanced_intent_dataset.json") -> Dict[str, Any]:  # Updated default path
     """
-    Retrain the model with new data
+    Retrain the model with enhanced dataset
     
     args:
-    - **data_path**: Path to the training dataset, you can alter the file with more data or different data to retrain, the chosen one is still the json file provided but could any other 
+    - **data_path**: Path to the training dataset (default: enhanced_intent_dataset.json)
     
     This endpoint triggers background retraining to avoid blocking the API.
+    The enhanced dataset contains more variations for better model performance.
     """
     if classifier is None:
         raise HTTPException(
@@ -329,26 +330,29 @@ async def retrain_model(
     
     def retrain_task():
         try:
-            logger.info(f"Starting model retraining with data from {data_path}")
+            logger.info(f"Starting SGDClassifier retraining with enhanced data from {data_path}")
             metrics = classifier.train(data_path)
             classifier.save_model()
-            logger.info(f"Model retrained successfully. Accuracy: {metrics['test_accuracy']:.4f}")
+            logger.info(f"SGDClassifier retrained successfully. Accuracy: {metrics['test_accuracy']:.4f}")
+            logger.info(f"Cross-validation mean: {metrics['cv_mean']:.4f}")
         except Exception as e:
-            logger.error(f"Retraining failed: {str(e)}")
+            logger.error(f"SGDClassifier retraining failed: {str(e)}")
     
     # Add retraining task to background
     background_tasks.add_task(retrain_task)
     
     return {
-        "message": "Model retraining started in background",
+        "message": "SGDClassifier retraining started in background with enhanced dataset",
         "data_path": data_path,
+        "model_type": "SGDClassifier",
+        "dataset_type": "enhanced",
         "timestamp": datetime.now().isoformat()
     }
 
 # Statistics endpoint 
 @router.get("/stats",
     summary="Get usage statistics",
-    description="Get API usage statistics and model performance metrics")
+    description="Get API usage statistics and SGDClassifier model performance metrics")
 async def get_statistics() -> Dict[str, Any]:
     """   
     Returns basic statistics about API usage and model performance.
@@ -362,6 +366,8 @@ async def get_statistics() -> Dict[str, Any]:
             "model_ready": classifier is not None and classifier.is_trained,
             "supported_intents_count": len(classifier.intent_labels) if classifier else 0,
             "api_version": "1.0.0",
+            "model_algorithm": "SGDClassifier",
+            "dataset_type": "enhanced",
             "timestamp": datetime.now().isoformat()
         }
         
@@ -369,6 +375,12 @@ async def get_statistics() -> Dict[str, Any]:
             model_info = classifier.get_model_info()
             stats["model_features"] = model_info.get("vectorizer_features", 0)
             stats["model_type"] = model_info.get("model_type", "Unknown")
+            stats["model_params"] = {
+                "alpha": 0.001,
+                "learning_rate": "optimal", 
+                "loss": "hinge",
+                "penalty": "l2"
+            }
         
         return stats
         
@@ -384,5 +396,4 @@ def init_classifier(classifier_instance: IntentClassifier):
     """Initialize the global classifier instance"""
     global classifier
     classifier = classifier_instance
-    logger.info("Classifier initialized in routes module")
-    
+    logger.info("SGDClassifier initialized in routes module")
